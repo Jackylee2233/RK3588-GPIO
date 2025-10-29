@@ -29,6 +29,8 @@ const BUS_IOC_GPIO1C_IOMUX_SEL_H_OFFSET: usize = 0x0034;
 /// 代表一個 GPIO 引腳的驅動程式結構。
 pub struct GpioPin {
     pin_num_global: u8, // 全局引腳編號 (0-31), 例如 C4 是 20
+    gpio_base: usize,
+    bus_ioc_base: usize,
 }
 
 impl GpioPin {
@@ -37,6 +39,17 @@ impl GpioPin {
         Self {
             pin_num_global: 20, // GPIO1_C4: C 組是第 3 組 (A=0, B=1, C=2), C4 是該組第 4 個引腳。
                                // 全局索引 = 8(A組) + 8(B組) + 4 = 20
+            gpio_base: GPIO1_BASE,
+            bus_ioc_base: BUS_IOC_BASE,
+        }
+    }
+
+    /// 為測試環境建立一個使用偽造基地址的 GpioPin 實例。
+    pub fn new_led_for_test(gpio_base: usize, bus_ioc_base: usize) -> Self {
+        Self {
+            pin_num_global: 20,
+            gpio_base,
+            bus_ioc_base,
         }
     }
 
@@ -45,7 +58,7 @@ impl GpioPin {
     /// 資訊來源: RK3588 TRM (BUS_IOC), Page 984, 990.
     pub fn set_function_gpio(&self) {
         // 計算 IOMUX 控制暫存器的完整記憶體位址
-        let iomux_reg_addr = BUS_IOC_BASE + BUS_IOC_GPIO1C_IOMUX_SEL_H_OFFSET;
+        let iomux_reg_addr = self.bus_ioc_base + BUS_IOC_GPIO1C_IOMUX_SEL_H_OFFSET;
         
         // GPIO1_C4 對應 gpio1c4_sel, 位於該暫存器的 bits [3:0]。
         // 每個引腳的 IOMUX 設定佔用 4 個位元。
@@ -68,7 +81,7 @@ impl GpioPin {
     /// 資訊來源: RK3588 TRM Part1, Page 1470, 1471.
     pub fn set_as_output(&self) {
         // 引腳 20 屬於高 16 位 (16-31)，因此使用 _DDR_H 暫存器。
-        let ddr_reg_addr = GPIO1_BASE + GPIO_SWPORT_DDR_H_OFFSET;
+        let ddr_reg_addr = self.gpio_base + GPIO_SWPORT_DDR_H_OFFSET;
         // 在高 16 位組內，引腳 20 的本地索引是 4 (20 - 16 = 4)。
         let local_pin_num = self.pin_num_global - 16;
 
@@ -85,7 +98,7 @@ impl GpioPin {
 
     /// 設置引腳為高電平 (點亮 LED)。
     pub fn set_high(&self) {
-        let dr_reg_addr = GPIO1_BASE + GPIO_SWPORT_DR_H_OFFSET;
+        let dr_reg_addr = self.gpio_base + GPIO_SWPORT_DR_H_OFFSET;
         let local_pin_num = self.pin_num_global - 16;
         
         let mask = 1 << (16 + local_pin_num);
@@ -98,7 +111,7 @@ impl GpioPin {
 
     /// 設置引腳為低電平 (熄滅 LED)。
     pub fn set_low(&self) {
-        let dr_reg_addr = GPIO1_BASE + GPIO_SWPORT_DR_H_OFFSET;
+        let dr_reg_addr = self.gpio_base + GPIO_SWPORT_DR_H_OFFSET;
         let local_pin_num = self.pin_num_global - 16;
 
         let mask = 1 << (16 + local_pin_num);

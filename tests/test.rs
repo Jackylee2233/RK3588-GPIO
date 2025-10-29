@@ -35,9 +35,17 @@ mod tests {
     fn gpio_smoke_test() {
         println!("Running GPIO smoke test...");
 
-        // 1. 為 LED 建立一個 GpioPin 實例。
-        let led_pin = GpioPin::new_led();
-        println!("- GpioPin created.");
+        // 在堆上分配一些記憶體來充當偽造的硬體暫存器，
+        // 以避免驅動程式在嘗試寫入時發生頁面錯誤。
+        let fake_gpio_regs = alloc::boxed::Box::new([0u32; 16]);
+        let fake_ioc_regs = alloc::boxed::Box::new([0u32; 16]);
+
+        let gpio_base = fake_gpio_regs.as_ptr() as usize;
+        let ioc_base = fake_ioc_regs.as_ptr() as usize;
+
+        // 1. 使用測試專用的構造函數和偽造的基地址建立一個 GpioPin 實例。
+        let led_pin = GpioPin::new_led_for_test(gpio_base, ioc_base);
+        println!("- GpioPin created for test with fake bases: gpio=0x{:x}, ioc=0x{:x}", gpio_base, ioc_base);
 
         // 2. 將引腳功能設定為 GPIO。
         led_pin.set_function_gpio();
@@ -60,3 +68,4 @@ mod tests {
         assert!(true);
     }
 }
+
