@@ -7,6 +7,8 @@ version = "0.1.0"
 mbarrier = "0.1"
 dma-api = { version = "0.5", features = ["alloc"] }
 log = "0.4"
+tock-registers = "0.10.0"
+thiserror = {version = "2.0", default-features =  false} 
 
 [dev-dependencies]
 bare-test = "0.7"
