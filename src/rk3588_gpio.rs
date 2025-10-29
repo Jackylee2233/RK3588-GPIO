@@ -44,6 +44,7 @@ impl GpioPin {
         }
     }
 
+    // TODO: 這個函數僅用於測試目的。稍後可移除。
     /// 為測試環境建立一個使用偽造基地址的 GpioPin 實例。
     pub fn new_led_for_test(gpio_base: usize, bus_ioc_base: usize) -> Self {
         Self {
